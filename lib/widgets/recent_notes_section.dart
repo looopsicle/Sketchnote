@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:sama/models/note_model.dart';
+import 'package:sama/providers/note_provider.dart';
 
-class RecentNotesSection extends StatelessWidget {
+class RecentNotesSection extends ConsumerWidget {
   const RecentNotesSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<Note> notes = ref.watch(notesProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -20,32 +24,18 @@ class RecentNotesSection extends StatelessWidget {
           crossAxisCount: 2,
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
-          itemCount: 5, // Jumlah item notes
+          itemCount: notes.length,
           itemBuilder: (context, index) {
-            // Logika untuk menampilkan card yang berbeda-beda
-            switch (index) {
-              case 0:
-                return const VoiceNoteCard();
-              case 1:
-                return const TextNoteCard(
-                  color: Color(0xFF3B82F6),
-                  title: 'Lecture 1',
-                  content:
-                      'how the lessons are structured, and what tools or materials you\'ll need. This lecture is designed to set the foundation, so feel free to take notes and ask questions.',
-                );
-              case 2:
-                return const ShoppingListCard();
-              case 3:
-                return const TextNoteCard(
-                  color: Color(0xFFF59E0B),
-                  title: 'Lecture 2',
-                  content:
-                      'exploring the core ideas behind the subject and why it matters. Whether you\'re completely new or have some',
-                );
-              case 4:
-                return const SketchCard();
-              default:
-                return Container();
+            final note = notes[index];
+            switch (note.type) {
+              case NoteType.voice:
+                return VoiceNoteCard(note: note);
+              case NoteType.text:
+                return TextNoteCard(note: note);
+              case NoteType.checklist:
+                return ChecklistNoteCard(note: note);
+              case NoteType.sketch:
+                return SketchCard(note: note);
             }
           },
         ),
@@ -57,22 +47,22 @@ class RecentNotesSection extends StatelessWidget {
 // Masing-masing card dipecah menjadi widget sendiri agar rapi
 
 class VoiceNoteCard extends StatelessWidget {
-  const VoiceNoteCard({super.key});
+  final Note note;
+  const VoiceNoteCard({super.key, required this.note});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: const Color(0xFF10B981),
+      color: note.color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        // <-- INI BAGIAN YANG DIPERBAIKI
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Voice Notes',
-              style: TextStyle(
+            Text(
+              note.title,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -103,21 +93,13 @@ class VoiceNoteCard extends StatelessWidget {
 }
 
 class TextNoteCard extends StatelessWidget {
-  final Color color;
-  final String title;
-  final String content;
-
-  const TextNoteCard({
-    super.key,
-    required this.color,
-    required this.title,
-    required this.content,
-  });
+  final Note note;
+  const TextNoteCard({super.key, required this.note});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: color,
+      color: note.color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -125,7 +107,7 @@ class TextNoteCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              title,
+              note.title,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -134,8 +116,9 @@ class TextNoteCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              content,
-              style: TextStyle(color: Color.fromRGBO(255, 255, 255, 0.9)),
+              note.content ??
+                  '', // Tampilkan konten, atau string kosong jika null
+              style: TextStyle(color: Color.fromRGBO(255, 255, 255, 0.8)),
             ),
           ],
         ),
@@ -144,54 +127,53 @@ class TextNoteCard extends StatelessWidget {
   }
 }
 
-class ShoppingListCard extends StatelessWidget {
-  const ShoppingListCard({super.key});
+class ChecklistNoteCard extends StatelessWidget {
+  final Note note;
+  const ChecklistNoteCard({super.key, required this.note});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: const Color(0xFFEC4899),
+      color: note.color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Shopping List',
-              style: TextStyle(
+            Text(
+              note.title,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 12),
-            _buildChecklistItem('Canned Beans', false),
-            _buildChecklistItem('Fettuccine', true),
-            _buildChecklistItem('Toilet Paper', true),
-            _buildChecklistItem('Oat Milk', false),
-            _buildChecklistItem('Chocolate', false),
-            _buildChecklistItem('Juice Box', false),
+            if (note.checklist != null)
+              ...note.checklist!
+                  .map((item) => _buildChecklistItem(item))
+                  .toList(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildChecklistItem(String item, bool checked) {
+  Widget _buildChecklistItem(ChecklistItem item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
           Icon(
-            checked
+            item.isCompleted
                 ? Icons.check_box_rounded
                 : Icons.check_box_outline_blank_rounded,
             color: Colors.white,
             size: 20,
           ),
           const SizedBox(width: 8),
-          Text(item, style: const TextStyle(color: Colors.white)),
+          Text(item.text, style: const TextStyle(color: Colors.white)),
         ],
       ),
     );
@@ -199,28 +181,30 @@ class ShoppingListCard extends StatelessWidget {
 }
 
 class SketchCard extends StatelessWidget {
-  const SketchCard({super.key});
+  final Note note;
+  const SketchCard({super.key, required this.note});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.white,
+      color: note.color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Quick Sketch',
-              style: TextStyle(
+            Text(
+              note.title,
+              style: const TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 12),
-            Center(child: Image.asset('assets/images/sketch.png')),
+            if (note.imagePath != null)
+              Center(child: Image.asset(note.imagePath!)),
           ],
         ),
       ),

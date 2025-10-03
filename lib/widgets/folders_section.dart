@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sama/models/folder_model.dart';
+import 'package:sama/providers/folder_provider.dart';
 
-class FoldersSection extends StatelessWidget {
+class FoldersSection extends ConsumerWidget {
   const FoldersSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<Folder> folders = ref.watch(folderProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -14,25 +19,14 @@ class FoldersSection extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         SizedBox(
-          height: 120,
-          child: ListView(
+          height: 140,
+          child: ListView.separated(
+            itemCount: folders.length,
             scrollDirection: Axis.horizontal,
-            children: const [
-              FolderItem(
-                imagePath: 'assets/images/folder_blue.png',
-                label: 'Homeworks',
-              ),
-              SizedBox(width: 18),
-              FolderItem(
-                imagePath: 'assets/images/folder_yellow.png',
-                label: 'Workouts',
-              ),
-              SizedBox(width: 18),
-              FolderItem(
-                imagePath: 'assets/images/folder_pink.png',
-                label: 'Sports',
-              ),
-            ],
+            separatorBuilder: (context, index) => const SizedBox(width: 18),
+            itemBuilder: (context, index) {
+              return FolderItem(folder: folders[index]);
+            },
           ),
         ),
       ],
@@ -40,19 +34,25 @@ class FoldersSection extends StatelessWidget {
   }
 }
 
+// FolderItem untuk menggunakan Image.asset
 class FolderItem extends StatelessWidget {
-  final String imagePath;
-  final String label;
-
-  const FolderItem({super.key, required this.imagePath, required this.label});
+  final Folder folder;
+  const FolderItem({super.key, required this.folder});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Image.asset(imagePath, width: 110, height: 80),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+        Image.asset(
+          folder.iconAssetPath,
+          width: 110,
+          height: 80,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.error, size: 80, color: Colors.red);
+          },
+        ),
+        const SizedBox(height: 4),
+        Text(folder.name, style: const TextStyle(fontWeight: FontWeight.w500)),
       ],
     );
   }

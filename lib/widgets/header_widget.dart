@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sama/providers/user_provider.dart';
 
-class HeaderWidget extends StatelessWidget {
-  final String userName;
-
-  const HeaderWidget({super.key, required this.userName});
+class HeaderWidget extends ConsumerWidget {
+  const HeaderWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userName = ref.watch(userProvider);
+
     return SizedBox(
       height: 140,
       child: Stack(
         children: [
-          // Teks di kiri atas
           Positioned(
-            top: 32, // geser teks ke atas (ubah sesuai selera, misal 0 atau 12)
+            top: 32,
             left: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
