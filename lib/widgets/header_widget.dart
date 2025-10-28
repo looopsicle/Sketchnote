@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sama/providers/user_provider.dart';
+import 'package:sama/features/user/presentation/providers/user_provider.dart';
 
 class HeaderWidget extends ConsumerWidget {
   const HeaderWidget({super.key});
